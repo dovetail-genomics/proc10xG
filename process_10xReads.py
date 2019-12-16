@@ -501,7 +501,7 @@ def main(read1, read2, output_dir, output_all, interleaved, profile, bctrim, tri
             output.writeRead(fragment)
 
             if read_count % 250000 == 0 and verbose:
-                sys.stderr.write("PROCESS\tREADS\treads analyzed:%i|reads/sec:%i|barcodes:%i|median_reads/barcode:%.2f\n" % (read_count, round(read_count / (time.time() - stime), 0), len(gbcCounter), median(gbcCounter.values())))
+                sys.stderr.write("PROCESS\tREADS\treads analyzed:%i|reads/sec:%i|barcodes:%i|median_reads/barcode:%.2f\n" % (read_count, round(read_count / (time.time() - stime), 0), len(gbcCounter), median(list(gbcCounter.values()))))
 
     except StopIteration:
         with open(output_dir + '_barcodes.txt', 'w') as f:
