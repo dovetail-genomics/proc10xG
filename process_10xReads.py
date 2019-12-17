@@ -49,7 +49,7 @@ def make_sure_path_exists(path):
     return path
 
 
-rcs = string.maketrans('TAGCtagc', 'ATCGATCG')
+rcs = str.maketrans('TAGCtagc', 'ATCGATCG')
 
 
 def revcomp(seq):
@@ -228,19 +228,19 @@ class TwoReadIlluminaRun:
             try:
                 # pull in read 1
                 status = 'UNKNOWN'
-                id1 = self.R1.next().strip()
-                seq1 = self.R1.next().strip()
-                self.R1.next()  # *
-                qual1 = self.R1.next().strip()
+                id1 = self.R1.readline().decode("utf8").strip()
+                seq1 = self.R1.readline().decode("utf8").strip()
+                self.R1.readline().decode("utf8")  # *
+                qual1 = self.R1.readline().decode("utf8").strip()
                 assert(len(seq1) == len(qual1))
                 if id1 == '' or seq1 == ''or qual1 == '':
                     self.close()
                     raise StopIteration
                 # pull in read2
-                id2 = self.R2.next().strip()
-                seq2 = self.R2.next().strip()
-                self.R2.next()  # *
-                qual2 = self.R2.next().strip()
+                id2 = self.R2.readline().decode("utf8").strip()
+                seq2 = self.R2.readline().decode("utf8").strip()
+                self.R2.readline().decode("utf8")  # *
+                qual2 = self.R2.readline().decode("utf8").strip()
                 assert(len(seq2) == len(qual2))
                 if id2 == '' or seq2 == ''or qual2 == '':
                     self.close()
@@ -248,6 +248,7 @@ class TwoReadIlluminaRun:
                 # check to make sure the IDs match across all files
                 assert(id1.split()[0] == id2.split()[0])
                 # TODO: add in profiler
+                #from IPython import embed; embed(header="🦃")
                 rid = id1.split()[0][1:]
                 rbc = (id1.split()[1]).split(':')[3]
                 if rbc == '':
@@ -383,15 +384,27 @@ class IlluminaTwoReadOutput:
     def writePairedFastq(self, fragment):
         newid = '@' + (':').join([fragment['gem_bc'], fragment['id']])
         # read 1
-        self.R1f.write((' ').join([newid, (':').join(['1', 'N', '0', fragment['library_bc'], ("_").join([fragment['status'], fragment['sgem_bc'], fragment['sgem_qual'], fragment['trim_seq'], fragment['trim_qual']])])]) + '\n')
-        self.R1f.write(fragment['read1_seq'] + '\n')
-        self.R1f.write('+\n')
-        self.R1f.write(fragment['read1_qual'] + '\n')
+
+        #new_read_name = f"{newid} 1:N:0:{fragment['library_bc']}:{fragment['status']}_{fragment['sgem_bc']}_{fragment['sgem_qual']}_{fragment['trim_seq']}_{fragment['trim_qual]}\n"
+
+        self.R1f.write(((' ').join([newid,
+                                   (':').join(['1',
+                                               'N',
+                                               '0',
+                                               fragment['library_bc'],
+                                               ("_").join([fragment['status'],
+                                                           fragment['sgem_bc'],
+                                                           fragment['sgem_qual'],
+                                                           fragment['trim_seq'],
+                                                           fragment['trim_qual']])])]) + '\n').encode("utf-8"))
+        self.R1f.write((fragment['read1_seq'] + '\n').encode("utf-8"))
+        self.R1f.write('+\n'.encode("utf-8"))
+        self.R1f.write((fragment['read1_qual'] + '\n').encode("utf-8"))
         # read 2
-        self.R2f.write((' ').join([newid, (':').join(['2', 'N', '0', fragment['library_bc'], ("_").join([fragment['status'], fragment['sgem_bc'], fragment['sgem_qual'], fragment['trim_seq'], fragment['trim_qual']])])]) + '\n')
-        self.R2f.write(fragment['read2_seq'] + '\n')
-        self.R2f.write('+\n')
-        self.R2f.write(fragment['read2_qual'] + '\n')
+        self.R2f.write(((' ').join([newid, (':').join(['2', 'N', '0', fragment['library_bc'], ("_").join([fragment['status'], fragment['sgem_bc'], fragment['sgem_qual'], fragment['trim_seq'], fragment['trim_qual']])])]) + '\n').encode("utf-8"))
+        self.R2f.write((fragment['read2_seq'] + '\n').encode("utf-8"))
+        self.R2f.write('+\n'.encode("utf-8"))
+        self.R2f.write((fragment['read2_qual'] + '\n').encode("utf-8"))
         self.mcount += 1
 
     def writeFastqInterleaved(self, fragment):
@@ -488,7 +501,7 @@ def main(read1, read2, output_dir, output_all, interleaved, profile, bctrim, tri
             output.writeRead(fragment)
 
             if read_count % 250000 == 0 and verbose:
-                sys.stderr.write("PROCESS\tREADS\treads analyzed:%i|reads/sec:%i|barcodes:%i|median_reads/barcode:%.2f\n" % (read_count, round(read_count / (time.time() - stime), 0), len(gbcCounter), median(gbcCounter.values())))
+                sys.stderr.write("PROCESS\tREADS\treads analyzed:%i|reads/sec:%i|barcodes:%i|median_reads/barcode:%.2f\n" % (read_count, round(read_count / (time.time() - stime), 0), len(gbcCounter), median(list(gbcCounter.values()))))
 
     except StopIteration:
         with open(output_dir + '_barcodes.txt', 'w') as f:
@@ -496,7 +509,7 @@ def main(read1, read2, output_dir, output_all, interleaved, profile, bctrim, tri
         output.close()
 
         if verbose:
-            sys.stderr.write("PROCESS\tREADS\treads analyzed:%i|reads/sec:%i|barcodes:%i|reads/barcode:%f\n" % (read_count, round(read_count / (time.time() - stime), 0), len(gbcCounter), median(gbcCounter.values())))
+            sys.stderr.write("PROCESS\tREADS\treads analyzed:%i|reads/sec:%i|barcodes:%i|reads/barcode:%f\n" % (read_count, round(read_count / (time.time() - stime), 0), len(gbcCounter), median(list(gbcCounter.values()))))
             sys.stderr.write("PROCESS\tBARCODE\tMATCH: %i (%.2f%%)\n" % (barcode_match, (float(barcode_match) / read_count) * 100))
             sys.stderr.write("PROCESS\tBARCODE\tMISMATCH1: %i (%.2f%%)\n" % (barcode_1mismatch, (float(barcode_1mismatch) / read_count) * 100))
             sys.stderr.write("PROCESS\tBARCODE\tAMBIGUOUS: %i (%.2f%%)\n" % (barcode_ambiguous, (float(barcode_ambiguous) / read_count) * 100))
