@@ -172,12 +172,14 @@ class TwoReadIlluminaRun:
                 if read1.split(".")[-1] == "gz":
                     self.R1 = sp_gzip_read(read1)
                 else:
-                    self.R1 = open(read1, 'r')
+                    raise Exception("R1 not gzipped. Plain text not supported.")
+                    #self.R1 = open(read1, 'r')
                 read2 = self.fread2.pop()
                 if read2.split(".")[-1] == "gz":
                     self.R2 = sp_gzip_read(read2)
                 else:
-                    self.R2 = open(read2, 'r')
+                    raise Exception("R1 not gzipped. Plain text not supported.")
+                    #self.R2 = open(read2, 'r')
             except Exception:
                 sys.stderr.write('PROCESS\tERROR:[TwoReadIlluminaRun] cannot open input files\n')
                 raise
@@ -228,19 +230,23 @@ class TwoReadIlluminaRun:
             try:
                 # pull in read 1
                 status = 'UNKNOWN'
+
                 id1 = self.R1.readline().decode("utf8").strip()
                 seq1 = self.R1.readline().decode("utf8").strip()
                 self.R1.readline().decode("utf8")  # *
                 qual1 = self.R1.readline().decode("utf8").strip()
+
                 assert(len(seq1) == len(qual1))
                 if id1 == '' or seq1 == ''or qual1 == '':
                     self.close()
                     raise StopIteration
                 # pull in read2
+
                 id2 = self.R2.readline().decode("utf8").strip()
                 seq2 = self.R2.readline().decode("utf8").strip()
                 self.R2.readline().decode("utf8")  # *
                 qual2 = self.R2.readline().decode("utf8").strip()
+
                 assert(len(seq2) == len(qual2))
                 if id2 == '' or seq2 == ''or qual2 == '':
                     self.close()
